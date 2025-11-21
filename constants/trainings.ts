@@ -17,12 +17,12 @@ export const trainings: TrainingDay[] = [
     label: 'Tag 1',
     instructions: {
       title: 'Tag eins Instruktionen',
-      link: 'https://edef5.pcloud.com/cfZeS3hwmZpcDKTB7Z4AS5Z8ZFInu0kZQ5ZZBU0ZZupjmrZx4ZkRZNRZ44ZXRZ98Z2RZs4Z6RZxRZELZPzZS8Z2LZXkGphIAbMD4sIgglTBddCkCf6Xo7/erledigt%20FHD%20INSTRUKTION%20%20Achter%20Wo1%20Vorw%C3%A4rts%20Moderiert%20LEG%C3%9C.mp4',
+      link: 'https://edef5.pcloud.com/cBZeS3hwmZpcDKTB7Z4AS5Z8ZXcCu0kZ2ZZ0RXZkZupjmrZx4ZkRZNRZ44ZXRZ98Z2RZs4Z6RZxRZELZPzZS8Z2LZeceOZajQPntfbkxFXFfxcy0bHumYzNCwk/erledigt%20FHD%20INSTRUKTION%20%20Achter%20Wo1%20Vorw%C3%A4rts%20Moderiert%20LEG%C3%9C.mp4',
       additionalInfo: 'Dies ist das Instruktions-Video für Tag 1.',
     },
     exercise: {
       title: 'Tag eins Übung',
-      link: 'https://edef8.pcloud.com/cfZQGMeFjZbgvKTB7Z4AS5Z8ZjUnu0kZQ5ZZBU0ZZUH4blZ5JZIpZxLZT8ZE0Zt7ZLHZvHZu4Zl0Z05Zt4Zg4ZxRZ5Aqy2W2BaNuHK8jDiEQ0jR70TR8y/E_PPP%208er-Gang%20Wo1%20Kurzf.%20%2B%20Mod.%20A.Schwab%20%27A%20Day%20Full%20Of%20Joy%27%20Arr.Musicfox%20FHD.mp4',
+      link: 'https://edef8.pcloud.com/cBZQGMeFjZbgvKTB7Z4AS5Z8ZDoCu0kZ2ZZ0RXZkZUH4blZ5JZIpZxLZT8ZE0Zt7ZLHZvHZu4Zl0Z05Zt4Zg4ZxRZeceOZwlSCc6VIpwHTlDpV3SKD6L9eN2wX/E_PPP%208er-Gang%20Wo1%20Kurzf.%20%2B%20Mod.%20A.Schwab%20%27A%20Day%20Full%20Of%20Joy%27%20Arr.Musicfox%20FHD.mp4',
       additionalInfo: 'Dies ist das Übungs-Video für Tag 1.',
     },
   },

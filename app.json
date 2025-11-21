@@ -12,7 +12,7 @@
     "backgroundColor": "#ffffff",
 
     "splash": {
-      "image": "./assets/images/brainhop_logo_big.png",
+      "image": "./assets/images/brainhop_logo_big_small.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
