@@ -27,4 +27,13 @@ export async function markTrainingWatched(id: string): Promise<void> {
   } catch (e) {
     console.warn('Failed to save watched training', e);
   }
+
+}
+
+export async function resetTrainingProgress(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  } catch (e) {
+    console.warn('Failed to reset training progress', e);
+  }
 }

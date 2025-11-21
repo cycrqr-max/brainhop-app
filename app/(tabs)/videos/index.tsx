@@ -16,11 +16,14 @@ import { trainings } from '@/constants/trainings';
 import { getWatchedTrainingIds } from '@/utils/trainingProgress';
 
 const BRAINHOP_ORANGE = '#f59c00';
+const LIGHT_BG = '#fff7eb';
+const TEXT_DARK = '#111827';
+const TEXT_BODY = '#374151';
+const TEXT_MUTED = '#6b7280';
 
 export default function VideosListScreen() {
   const [watchedIds, setWatchedIds] = useState<string[]>([]);
 
-  // Reload progress whenever this screen comes into focus
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -36,15 +39,24 @@ export default function VideosListScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      {/* Logo at the top */}
-      <ExpoImage
-        source={require('@/assets/images/brainhop_logo_big.png')}
-        style={styles.logo}
-        contentFit="contain"
-      />
+      {/* Hero / jumbotron */}
+      <View style={styles.hero}>
+        <ExpoImage
+          source={require('@/assets/images/brainhop_logo_big.png')}
+          style={styles.heroLogo}
+          contentFit="contain"
+        />
+        <ThemedText style={styles.heroTitle}>
+          Dein Brainhop-Programm
+        </ThemedText>
+        <ThemedText style={styles.heroSubtitle}>
+          Wähle deinen heutigen Übungstag aus und arbeite dich Schritt
+          für Schritt durch die Trainings.
+        </ThemedText>
+      </View>
 
-      <ThemedText type="title" style={styles.heading}>
-        Trainings Videos
+      <ThemedText style={styles.sectionTitle}>
+        Deine Trainingstage
       </ThemedText>
 
       <FlatList
@@ -52,10 +64,9 @@ export default function VideosListScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const isWatched = watchedIds.includes(item.id);
           const href = `/videos/${item.id}` as Href;
-
           const description =
             item.exercise.additionalInfo ?? item.exercise.title;
 
@@ -64,15 +75,32 @@ export default function VideosListScreen() {
               style={styles.card}
               onPress={() => router.push(href)}
             >
-              <View style={styles.cardTextWrapper}>
-                <ThemedText type="subtitle" style={styles.cardTitle}>
+              {/* Accent bar on the left */}
+              <View style={styles.cardAccent} />
+
+              <View style={styles.cardMain}>
+                <ThemedText style={styles.cardTitle}>
                   {item.label}
                 </ThemedText>
                 <ThemedText style={styles.cardDescription}>
                   {description}
                 </ThemedText>
+
+                <View style={styles.cardMetaRow}>
+                  <ThemedText style={styles.cardMetaText}>
+                    Tag {index + 1} von {trainings.length}
+                  </ThemedText>
+                  {isWatched && (
+                    <View style={styles.pill}>
+                      <ThemedText style={styles.pillText}>
+                        abgeschlossen
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
               </View>
 
+              {/* Check icon on the right */}
               <ExpoImage
                 source={
                   isWatched
@@ -93,47 +121,110 @@ export default function VideosListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+    backgroundColor: LIGHT_BG,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
-  logo: {
-    width: '100%',
-    height: 80,
+
+  hero: {
+    backgroundColor: '#ffe9c7',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 16,
+    alignItems: 'center',
   },
-  heading: {
+  heroLogo: {
+    width: '80%',
+    height: 48,
+    marginBottom: 8,
+  },
+  heroTitle: {
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: '700',
+    color: TEXT_DARK,
   },
+  heroSubtitle: {
+    textAlign: 'center',
+    fontSize: 13,
+    color: TEXT_BODY,
+  },
+
+  sectionTitle: {
+    marginBottom: 8,
+    marginLeft: 4,
+    fontSize: 16,
+    fontWeight: '700',
+    color: TEXT_DARK,
+  },
+
   listContent: {
     paddingBottom: 24,
   },
   separator: {
-    height: 12,
+    height: 10,
   },
+
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    borderRadius: 16,
     backgroundColor: '#ffffff',
+    overflow: 'hidden',
+
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
   },
-  cardTextWrapper: {
+  cardAccent: {
+    width: 4,
+    alignSelf: 'stretch',
+    backgroundColor: BRAINHOP_ORANGE,
+  },
+  cardMain: {
     flex: 1,
-    paddingRight: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
   },
   cardTitle: {
-    marginBottom: 4,
+    marginBottom: 2,
+    fontSize: 16,
+    fontWeight: '700',
+    color: TEXT_DARK,
   },
   cardDescription: {
     fontSize: 13,
-    color: '#4b5563',
+    color: TEXT_BODY,
+    marginBottom: 6,
   },
+  cardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardMetaText: {
+    fontSize: 12,
+    color: TEXT_MUTED,
+  },
+  pill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: '#ecfdf5',
+  },
+  pillText: {
+    fontSize: 11,
+    color: '#15803d',
+  },
+
   checkIcon: {
-    width: 24,
-    height: 24,
+    width: 26,
+    height: 26,
+    marginRight: 10,
   },
 });

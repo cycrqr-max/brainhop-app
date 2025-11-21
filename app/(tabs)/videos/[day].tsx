@@ -1,8 +1,14 @@
 // app/(tabs)/videos/[day].tsx
+
 import { Image as ExpoImage } from 'expo-image';
-import { router, useLocalSearchParams, type Href } from 'expo-router';
+import {
+    router,
+    useFocusEffect,
+    useLocalSearchParams,
+    type Href,
+} from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -11,6 +17,9 @@ import { trainings } from '@/constants/trainings';
 import { markTrainingWatched } from '@/utils/trainingProgress';
 
 const BRAINHOP_ORANGE = '#f59c00';
+const LIGHT_BG = '#fff7eb';
+const TEXT_DARK = '#111827';
+const TEXT_BODY = '#374151';
 
 export default function TrainingDayScreen() {
   const { day } = useLocalSearchParams<{ day?: string }>();
@@ -31,60 +40,65 @@ export default function TrainingDayScreen() {
     player.loop = false;
   });
 
-  // Mark as watched when this training screen is opened
   useEffect(() => {
-    markTrainingWatched(training.id).catch(() => {
-      /* ignore */
-    });
+    markTrainingWatched(training.id).catch(() => {});
   }, [training.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        try {
+          player.pause();
+        } catch {}
+      };
+    }, [player])
+  );
 
   return (
     <ThemedView style={styles.fullScreen}>
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Logo at the top */}
-        <ExpoImage
-          source={require('@/assets/images/brainhop_logo_big.png')}
-          style={styles.logo}
-          contentFit="contain"
-        />
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.card}>
+          {/* small brain icon at the top */}
+          <View style={styles.cardIconWrapper}>
+            <ExpoImage
+              source={require('@/assets/images/brainhop_logo.png')}
+              style={styles.cardIcon}
+              contentFit="contain"
+            />
+          </View>
 
-        {/* Title + description */}
-        <ThemedText type="title" style={styles.title}>
-          {training.label}
-        </ThemedText>
-
-        <ThemedText type="subtitle" style={styles.subtitle}>
-          {video.title}
-        </ThemedText>
-
-        {video.additionalInfo && (
-          <ThemedText style={styles.info}>{video.additionalInfo}</ThemedText>
-        )}
-
-        {/* Link to instructions ABOVE the video */}
-        <TouchableOpacity
-          style={styles.instructionsButton}
-          onPress={() => {
-            const href = `/videos/${training.id}/instructions` as Href;
-            router.push(href);
-          }}
-        >
-          <ThemedText
-            type="link"
-            style={styles.instructionsText}
-          >
-            Zu den Instruktionen →
+          <ThemedText style={styles.title}>
+            {training.label}
           </ThemedText>
-        </TouchableOpacity>
 
-        {/* Video player */}
-        <View style={styles.videoWrapper}>
-          <VideoView
-            player={player}
-            style={styles.video}
-            nativeControls
-            contentFit="contain"
-          />
+          <ThemedText style={styles.subtitle}>
+            {video.title}
+          </ThemedText>
+
+          {video.additionalInfo && (
+            <ThemedText style={styles.info}>{video.additionalInfo}</ThemedText>
+          )}
+
+          <TouchableOpacity
+            style={styles.instructionsButton}
+            onPress={() => {
+              const href = `/videos/${training.id}/instructions` as Href;
+              router.push(href);
+            }}
+          >
+            <ThemedText style={styles.instructionsText}>
+              Zu den Instruktionen →
+            </ThemedText>
+          </TouchableOpacity>
+
+          <View style={styles.videoWrapper}>
+            <VideoView
+              player={player}
+              style={styles.video}
+              nativeControls
+              contentFit="contain"
+            />
+          </View>
         </View>
       </ScrollView>
     </ThemedView>
@@ -94,30 +108,61 @@ export default function TrainingDayScreen() {
 const styles = StyleSheet.create({
   fullScreen: {
     flex: 1,
+    backgroundColor: LIGHT_BG,
   },
-  container: {
-    paddingHorizontal: 24,
-    paddingVertical: 24,
+  scroll: {
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     alignItems: 'center',
-    gap: 8,
+
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  logo: {
-    width: '100%',
-    height: 80,
-    marginBottom: 16,
+  cardIconWrapper: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#ffe9c7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
+  cardIcon: {
+    width: 34,
+    height: 34,
+  },
+
   title: {
     textAlign: 'center',
+    fontSize: 22,
+    fontWeight: '700',
+    color: TEXT_DARK,
   },
   subtitle: {
     marginTop: 4,
     textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '600',
+    color: TEXT_DARK,
   },
   info: {
-    marginTop: 4,
-    marginBottom: 4,
+    marginTop: 8,
+    marginBottom: 8,
     textAlign: 'center',
+    fontSize: 14,
+    color: TEXT_BODY,
   },
+
   instructionsButton: {
     marginTop: 4,
     marginBottom: 12,
@@ -126,15 +171,16 @@ const styles = StyleSheet.create({
     color: BRAINHOP_ORANGE,
     textDecorationLine: 'underline',
     textAlign: 'center',
+    fontWeight: '600',
   },
+
   videoWrapper: {
     width: '100%',
     maxWidth: 500,
     aspectRatio: 16 / 9,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    alignSelf: 'center',
-    marginTop: 4,
+    marginTop: 8,
   },
   video: {
     width: '100%',

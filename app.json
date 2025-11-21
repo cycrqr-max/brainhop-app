@@ -4,10 +4,19 @@
     "slug": "brainhop",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/brainhop_logo.png",
+    "icon": "./assets/images/brainhop_logo_adaptiv_new.png",
     "scheme": "brainhop",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
+    "backgroundColor": "#ffffff",
+
+    "splash": {
+      "image": "./assets/images/brainhop_logo_big.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
     "ios": {
       "supportsTablet": true
     },
@@ -17,7 +26,8 @@
         "foregroundImage": "./assets/images/brainhop_logo.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.cycrqr.brainhop"
     },
     "web": {
       "output": "static",
@@ -31,10 +41,7 @@
           "image": "./assets/images/brainhop_logo_big.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "backgroundColor": "#ffffff"
         }
       ],
       "expo-video"
@@ -42,6 +49,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6f97202b-7c40-4693-bcb4-e3ab19b72a44"
+      }
     }
   }
 }

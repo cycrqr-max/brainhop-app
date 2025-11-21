@@ -1,4 +1,5 @@
-import { Tabs } from 'expo-router';
+// app/(tabs)/_layout.tsx
+import { Tabs, router } from 'expo-router';
 import React from 'react';
 import { Image } from 'react-native';
 
@@ -32,6 +33,12 @@ export default function TabLayout() {
 
       <Tabs.Screen
         name="videos"
+        listeners={{
+          tabPress: (e: any) => {
+            e.preventDefault();
+            router.replace('/videos');
+          },
+        }}
         options={{
           title: 'Videos',
           tabBarIcon: ({ color }) => (
