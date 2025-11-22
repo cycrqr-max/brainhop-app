@@ -5,16 +5,16 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  View,
 } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { trainings } from '@/constants/trainings';
-import { getPcloudFileUrlFromPublink } from '@/utils/pcloudClient';
+import { buildPcloudStreamUrl } from '@/utils/pcloudClient';
 
 const LIGHT_BG = '#fff7eb';
 const TEXT_DARK = '#111827';
@@ -30,32 +30,15 @@ export default function TrainingInstructionsScreen() {
 
   useEffect(() => {
     if (!training) return;
-
-    let active = true;
-    setLoading(true);
     setLoadError(null);
+    setLoading(true);
 
-    (async () => {
-      try {
-        const url = await getPcloudFileUrlFromPublink(
-          training.instructions.link,
-        );
-        if (!active) return;
-        setVideoUrl(url);
-      } catch (e) {
-        console.warn('Failed to load pCloud instructions URL', e);
-        if (active) {
-          setLoadError('Video konnte nicht geladen werden.');
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
+    // we now just build the URL to *your backend*
+    const url = buildPcloudStreamUrl(training.instructions.link);
+    setVideoUrl(url);
+    setLoading(false); // we know the URL; backend will stream the rest
   }, [training]);
+
 
   const player = useVideoPlayer(videoUrl ?? '', (player) => {
     player.loop = false;
