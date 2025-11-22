@@ -4,6 +4,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
+    Alert,
     FlatList,
     Linking,
     StyleSheet,
@@ -72,7 +73,7 @@ export default function VideosListScreen() {
           <ThemedText style={styles.heroSubtitle}>
             {isTrialExpired
               ? 'Deine 21-Tage Challenge ist beendet. Für weiteren Zugriff auf alle Brainhop-Trainingsvideos hol dir bitte die Vollversion auf unserer Website.'
-              : 'Um die Brainhop-Trainingsvideos zu nutzen, aktiviere zuerst deine kostenlose 2-Monats-Testversion auf der Startseite.'}
+              : 'Um die Brainhop-Trainingsvideos zu nutzen, aktiviere zuerst deine 21-Tage Challenge auf der Startseite.'}
           </ThemedText>
         </View>
 
@@ -98,7 +99,13 @@ export default function VideosListScreen() {
     );
   }
 
-  // -------- Normal list (trial active) --------
+  // Index des ersten nicht erledigten Tages (kann -1 sein, wenn alles erledigt)
+  const firstUnwatchedIndex = trainings.findIndex(
+    (t) => !watchedIds.includes(t.id),
+  );
+  const hasUnwatched = firstUnwatchedIndex !== -1;
+
+  // -------- Normale Liste (Trial aktiv) --------
   return (
     <ThemedView style={styles.container}>
       {/* Hero / jumbotron */}
@@ -132,18 +139,49 @@ export default function VideosListScreen() {
           const description =
             item.exercise.additionalInfo ?? item.exercise.title;
 
+          // Nur der erste nicht erledigte Tag ist freigeschaltet.
+          // Alle späteren nicht erledigten Tage sind gesperrt.
+          const isLocked =
+            hasUnwatched &&
+            !isWatched &&
+            index > firstUnwatchedIndex;
+
+          const handlePress = () => {
+            if (isLocked) {
+              const required = trainings[firstUnwatchedIndex];
+              Alert.alert(
+                'Übung noch gesperrt',
+                `Bitte schließe zuerst ${required.label} ab, bevor du mit diesem Übungstag weitermachst.`,
+              );
+              return;
+            }
+            router.push(href);
+          };
+
           return (
-            <TouchableOpacity
-              style={styles.card}
-              onPress={() => router.push(href)}
-            >
+            <TouchableOpacity style={styles.card} onPress={handlePress}>
               {/* Accent bar on the left */}
-              <View style={styles.cardAccent} />
+              <View
+                style={[
+                  styles.cardAccent,
+                  isLocked && styles.cardAccentLocked,
+                ]}
+              />
 
               <View style={styles.cardMain}>
-                <ThemedText style={styles.cardTitle}>
-                  {item.label}
-                </ThemedText>
+                <View style={styles.cardTitleRow}>
+                  <ThemedText style={styles.cardTitle}>
+                    {item.label}
+                  </ThemedText>
+                  {isLocked && !isWatched && (
+                    <ExpoImage
+                      source={require('@/assets/images/lock.png')}
+                      style={styles.lockIcon}
+                      contentFit="contain"
+                    />
+                  )}
+                </View>
+
                 <ThemedText style={styles.cardDescription}>
                   {description}
                 </ThemedText>
@@ -248,16 +286,28 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     backgroundColor: BRAINHOP_ORANGE,
   },
+  cardAccentLocked: {
+    backgroundColor: '#4b5563', // dunkles Grau für gesperrte Tage
+  },
   cardMain: {
     flex: 1,
     paddingVertical: 10,
     paddingHorizontal: 14,
+  },
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   cardTitle: {
     marginBottom: 2,
     fontSize: 16,
     fontWeight: '700',
     color: TEXT_DARK,
+  },
+  lockIcon: {
+    width: 16,
+    height: 16,
+    marginLeft: 6,
   },
   cardDescription: {
     fontSize: 13,

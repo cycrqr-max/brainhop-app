@@ -3,12 +3,18 @@
 import { Image as ExpoImage } from 'expo-image';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useCallback } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    View,
+} from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { trainings } from '@/constants/trainings';
+import { getPcloudFileUrlFromPublink } from '@/utils/pcloudClient';
 
 const LIGHT_BG = '#fff7eb';
 const TEXT_DARK = '#111827';
@@ -16,19 +22,42 @@ const TEXT_BODY = '#374151';
 
 export default function TrainingInstructionsScreen() {
   const { day } = useLocalSearchParams<{ day?: string }>();
-
   const training = trainings.find((t) => t.id === day);
 
-  if (!training) {
-    return (
-      <ThemedView style={styles.fullScreen}>
-        <ThemedText type="title">Instruktionen nicht gefunden</ThemedText>
-      </ThemedView>
-    );
-  }
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const video = training.instructions;
-  const player = useVideoPlayer(video.link, (player) => {
+  useEffect(() => {
+    if (!training) return;
+
+    let active = true;
+    setLoading(true);
+    setLoadError(null);
+
+    (async () => {
+      try {
+        const url = await getPcloudFileUrlFromPublink(
+          training.instructions.link,
+        );
+        if (!active) return;
+        setVideoUrl(url);
+      } catch (e) {
+        console.warn('Failed to load pCloud instructions URL', e);
+        if (active) {
+          setLoadError('Video konnte nicht geladen werden.');
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [training]);
+
+  const player = useVideoPlayer(videoUrl ?? '', (player) => {
     player.loop = false;
   });
 
@@ -39,14 +68,23 @@ export default function TrainingInstructionsScreen() {
           player.pause();
         } catch {}
       };
-    }, [player])
+    }, [player]),
   );
+
+  if (!training) {
+    return (
+      <ThemedView style={styles.fullScreen}>
+        <ThemedText type="title">Instruktionen nicht gefunden</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  const video = training.instructions;
 
   return (
     <ThemedView style={styles.fullScreen}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.card}>
-          {/* brain icon */}
           <View style={styles.cardIconWrapper}>
             <ExpoImage
               source={require('@/assets/images/brainhop_logo.png')}
@@ -59,27 +97,40 @@ export default function TrainingInstructionsScreen() {
             Instruktionen – {training.label}
           </ThemedText>
 
-          <ThemedText style={styles.subtitle}>
-            {video.title}
-          </ThemedText>
+          <ThemedText style={styles.subtitle}>{video.title}</ThemedText>
 
           {video.additionalInfo && (
             <ThemedText style={styles.info}>{video.additionalInfo}</ThemedText>
           )}
 
           <View style={styles.videoWrapper}>
-            <VideoView
-              player={player}
-              style={styles.video}
-              nativeControls
-              contentFit="contain"
-            />
+            {loading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" />
+              </View>
+            )}
+            {loadError && (
+              <View style={styles.loadingOverlay}>
+                <ThemedText style={styles.errorText}>{loadError}</ThemedText>
+              </View>
+            )}
+            {videoUrl && !loading && !loadError && (
+              <VideoView
+                player={player}
+                style={styles.video}
+                nativeControls
+                contentFit="contain"
+              />
+            )}
           </View>
         </View>
       </ScrollView>
     </ThemedView>
   );
 }
+
+// styles: same as before plus loadingOverlay/errorText if you want, or reuse from [day].tsx
+
 
 const styles = StyleSheet.create({
   fullScreen: {
@@ -146,9 +197,22 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     marginTop: 8,
+    backgroundColor: '#d1d5db',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   video: {
     width: '100%',
     height: '100%',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    inset: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#b91c1c',
+    textAlign: 'center',
   },
 });

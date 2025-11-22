@@ -1,5 +1,3 @@
-// app/(tabs)/videos/[day].tsx
-
 import { Image as ExpoImage } from 'expo-image';
 import {
     router,
@@ -8,12 +6,19 @@ import {
     type Href,
 } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import React, { useCallback, useEffect } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    ScrollView,
+    StyleSheet,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { trainings } from '@/constants/trainings';
+import { getPcloudFileUrlFromPublink } from '@/utils/pcloudClient';
 import { markTrainingWatched } from '@/utils/trainingProgress';
 
 const BRAINHOP_ORANGE = '#f59c00';
@@ -23,8 +28,60 @@ const TEXT_BODY = '#374151';
 
 export default function TrainingDayScreen() {
   const { day } = useLocalSearchParams<{ day?: string }>();
-
   const training = trainings.find((t) => t.id === day);
+
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!training) return;
+
+    let active = true;
+    setLoading(true);
+    setLoadError(null);
+
+    (async () => {
+      try {
+        const url = await getPcloudFileUrlFromPublink(
+          training.exercise.link,
+        );
+        if (!active) return;
+        setVideoUrl(url);
+      } catch (e) {
+        console.warn('Failed to load pCloud URL', e);
+        if (active) {
+          setLoadError('Video konnte nicht geladen werden.');
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [training]);
+
+  // Create player when we have a URL
+  const player = useVideoPlayer(videoUrl ?? '', (player) => {
+    player.loop = false;
+  });
+
+  useEffect(() => {
+    if (!training) return;
+    markTrainingWatched(training.id).catch(() => {});
+  }, [training]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        try {
+          player.pause();
+        } catch {}
+      };
+    }, [player]),
+  );
 
   if (!training) {
     return (
@@ -36,29 +93,10 @@ export default function TrainingDayScreen() {
 
   const video = training.exercise;
 
-  const player = useVideoPlayer(video.link, (player) => {
-    player.loop = false;
-  });
-
-  useEffect(() => {
-    markTrainingWatched(training.id).catch(() => {});
-  }, [training.id]);
-
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        try {
-          player.pause();
-        } catch {}
-      };
-    }, [player])
-  );
-
   return (
     <ThemedView style={styles.fullScreen}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.card}>
-          {/* small brain icon at the top */}
           <View style={styles.cardIconWrapper}>
             <ExpoImage
               source={require('@/assets/images/brainhop_logo.png')}
@@ -67,13 +105,8 @@ export default function TrainingDayScreen() {
             />
           </View>
 
-          <ThemedText style={styles.title}>
-            {training.label}
-          </ThemedText>
-
-          <ThemedText style={styles.subtitle}>
-            {video.title}
-          </ThemedText>
+          <ThemedText style={styles.title}>{training.label}</ThemedText>
+          <ThemedText style={styles.subtitle}>{video.title}</ThemedText>
 
           {video.additionalInfo && (
             <ThemedText style={styles.info}>{video.additionalInfo}</ThemedText>
@@ -92,19 +125,30 @@ export default function TrainingDayScreen() {
           </TouchableOpacity>
 
           <View style={styles.videoWrapper}>
-            <VideoView
-              player={player}
-              style={styles.video}
-              nativeControls
-              contentFit="contain"
-            />
+            {loading && (
+              <View style={styles.loadingOverlay}>
+                <ActivityIndicator size="large" color={BRAINHOP_ORANGE} />
+              </View>
+            )}
+            {loadError && (
+              <View style={styles.loadingOverlay}>
+                <ThemedText style={styles.errorText}>{loadError}</ThemedText>
+              </View>
+            )}
+            {videoUrl && !loading && !loadError && (
+              <VideoView
+                player={player}
+                style={styles.video}
+                nativeControls
+                contentFit="contain"
+              />
+            )}
           </View>
         </View>
       </ScrollView>
     </ThemedView>
   );
 }
-
 const styles = StyleSheet.create({
   fullScreen: {
     flex: 1,
@@ -181,9 +225,22 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: 'hidden',
     marginTop: 8,
+    backgroundColor: '#d1d5db',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   video: {
     width: '100%',
     height: '100%',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    inset: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#b91c1c',
+    textAlign: 'center',
   },
 });

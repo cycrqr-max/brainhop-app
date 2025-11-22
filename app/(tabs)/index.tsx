@@ -25,6 +25,12 @@ import {
   type TrialInfo,
 } from '@/utils/trial';
 
+import {
+  loadReminderSettings,
+  setDailyReminder,
+  type ReminderSettings,
+} from '@/utils/dailyReminder';
+
 const BRAINHOP_ORANGE = '#f59c00';
 const LIGHT_BG = '#fff7eb';
 const TEXT_DARK = '#111827';
@@ -43,17 +49,22 @@ export default function HomeScreen() {
   const [isResetting, setIsResetting] = useState(false);
   const [trial, setTrial] = useState<TrialInfo | null>(null);
 
+  const [reminder, setReminder] = useState<ReminderSettings | null>(null);
+  const [togglingReminder, setTogglingReminder] = useState(false);
+
   useFocusEffect(
     useCallback(() => {
       let active = true;
       (async () => {
-        const [ids, trialInfo] = await Promise.all([
+        const [ids, trialInfo, reminderSettings] = await Promise.all([
           getWatchedTrainingIds(),
           loadTrialInfo(),
+          loadReminderSettings(),
         ]);
         if (!active) return;
         setWatchedIds(ids);
         setTrial(trialInfo);
+        setReminder(reminderSettings);
       })();
       return () => {
         active = false;
@@ -80,6 +91,17 @@ export default function HomeScreen() {
   const handleStartTrial = async () => {
     const info = await startTrial();
     setTrial(info);
+  };
+
+  const handleToggleReminder = async () => {
+    if (!reminder) return;
+    try {
+      setTogglingReminder(true);
+      const updated = await setDailyReminder(!reminder.enabled);
+      setReminder(updated);
+    } finally {
+      setTogglingReminder(false);
+    }
   };
 
   const handleReset = async () => {
@@ -113,7 +135,7 @@ export default function HomeScreen() {
   };
 
   const handleOpenWebsite = () => {
-    Linking.openURL('https://brainhop.net').catch((e) =>
+    Linking.openURL('https://www.brainhop.net/brainhop-app').catch((e) =>
       console.warn('Failed to open website', e),
     );
   };
@@ -154,7 +176,9 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Trial activation / upgrade card */}
+        {/* ---- Trial cards (top) ---- */}
+
+        {/* Not started yet: only show "Challenge starten" card */}
         {trialStatus === 'not-activated' && (
           <View style={styles.trialCard}>
             <ThemedText style={styles.cardTitle}>
@@ -175,6 +199,7 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {/* Expired: show "abgelaufen" card */}
         {isTrialExpired && (
           <View style={styles.trialCard}>
             <ThemedText style={styles.cardTitle}>
@@ -197,7 +222,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Progress card */}
+        {/* ---- Always visible: Brainhop-Score ---- */}
         <View style={styles.card}>
           <ThemedText style={styles.cardTitle}>
             Brainhop-Score
@@ -229,10 +254,10 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Next / reset card (depends on trial status) */}
-        <View style={styles.card}>
-          {isTrialActive ? (
-            allDone ? (
+        {/* ---- Only when trial is ACTIVE: next day card ---- */}
+        {isTrialActive && (
+          <View style={styles.card}>
+            {allDone ? (
               <>
                 <ThemedText style={styles.cardTitle}>
                   Alle Übungen geschafft!
@@ -275,55 +300,52 @@ export default function HomeScreen() {
                       style={styles.primaryButton}
                       onPress={handleStartNext}
                     >
-                      <ThemedText
-                        style={styles.primaryButtonText}
-                      >
+                      <ThemedText style={styles.primaryButtonText}>
                         Übung starten
                       </ThemedText>
                     </TouchableOpacity>
                   </>
                 )}
               </>
-            )
-          ) : trialStatus === 'not-activated' ? (
-            <>
-              <ThemedText style={styles.cardTitle}>
-                Dein nächster Übungstag
+            )}
+          </View>
+        )}
+
+        {/* ---- Only when trial is ACTIVE: daily reminder card ---- */}
+        {isTrialActive && (
+          <View style={styles.card}>
+            <ThemedText style={styles.cardTitle}>
+              Tägliche Erinnerung
+            </ThemedText>
+            <ThemedText style={styles.cardSubText}>
+              Lass dich einmal am Tag daran erinnern, deine nächste
+              Brainhop-Übung zu machen.
+            </ThemedText>
+
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                (!reminder || togglingReminder) && { opacity: 0.6 },
+              ]}
+              disabled={!reminder || togglingReminder}
+              onPress={handleToggleReminder}
+            >
+              <ThemedText style={styles.primaryButtonText}>
+                {reminder?.enabled
+                  ? 'Erinnerung ausschalten'
+                  : 'Erinnerung einschalten'}
               </ThemedText>
-              <ThemedText style={styles.cardSubText}>
-                Aktiviere zuerst deine 21-Tage Challenge, um
-                mit den Brainhop-Übungen zu starten.
+            </TouchableOpacity>
+
+            {reminder && (
+              <ThemedText style={styles.reminderStatusText}>
+                {reminder.enabled
+                  ? 'Tägliche Erinnerung ist aktiviert.'
+                  : 'Zurzeit ist keine tägliche Erinnerung aktiv.'}
               </ThemedText>
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={handleStartTrial}
-              >
-                <ThemedText style={styles.primaryButtonText}>
-                  21-Tage Challenge starten
-                </ThemedText>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <ThemedText style={styles.cardTitle}>
-                21-Tage Challenge abgelaufen
-              </ThemedText>
-              <ThemedText style={styles.cardSubText}>
-                Deine kostenlose 21-Tage Challenge ist beendet. Hol dir
-                die Vollversion, um weiterhin Zugriff auf alle
-                Trainingsvideos zu haben.
-              </ThemedText>
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={handleOpenWebsite}
-              >
-                <ThemedText style={styles.primaryButtonText}>
-                  Zur Vollversion auf brainhop.net
-                </ThemedText>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
+            )}
+          </View>
+        )}
       </ScrollView>
     </ThemedView>
   );
@@ -339,7 +361,11 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     gap: 16,
   },
-
+  reminderStatusText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: TEXT_MUTED,
+  },
   hero: {
     backgroundColor: '#ffe9c7',
     borderRadius: 20,
