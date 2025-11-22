@@ -19,10 +19,10 @@ function parseStoredDate(value: string | null): Date | null {
 
 function computeEndDate(start: Date): Date {
   const end = new Date(start);
-  // “2 Monate” – this respects calendar months
-  end.setMonth(end.getMonth() + 2);
+  end.setDate(end.getDate() + 21);
   return end;
 }
+
 
 export async function loadTrialInfo(): Promise<TrialInfo> {
   try {

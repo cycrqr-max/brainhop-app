@@ -5,6 +5,7 @@ import { router, useFocusEffect, type Href } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
     FlatList,
+    Linking,
     StyleSheet,
     TouchableOpacity,
     View,
@@ -14,6 +15,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { trainings } from '@/constants/trainings';
 import { getWatchedTrainingIds } from '@/utils/trainingProgress';
+import { loadTrialInfo, type TrialInfo } from '@/utils/trial';
 
 const BRAINHOP_ORANGE = '#f59c00';
 const LIGHT_BG = '#fff7eb';
@@ -23,20 +25,80 @@ const TEXT_MUTED = '#6b7280';
 
 export default function VideosListScreen() {
   const [watchedIds, setWatchedIds] = useState<string[]>([]);
+  const [trial, setTrial] = useState<TrialInfo | null>(null);
+  const [checkedTrial, setCheckedTrial] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       (async () => {
-        const ids = await getWatchedTrainingIds();
-        if (active) setWatchedIds(ids);
+        const [ids, trialInfo] = await Promise.all([
+          getWatchedTrainingIds(),
+          loadTrialInfo(),
+        ]);
+
+        if (!active) return;
+
+        setWatchedIds(ids);
+        setTrial(trialInfo);
+        setCheckedTrial(true);
       })();
+
       return () => {
         active = false;
       };
-    }, [])
+    }, []),
   );
 
+  const status = trial?.status ?? 'not-activated';
+  const isTrialActive = status === 'active';
+  const isTrialExpired = status === 'expired';
+
+  // -------- Locked view (trial not active) --------
+  if (checkedTrial && !isTrialActive) {
+    return (
+      <ThemedView style={styles.lockedScreen}>
+        <View style={styles.hero}>
+          <ExpoImage
+            source={require('@/assets/images/brainhop_logo_big.png')}
+            style={styles.heroLogo}
+            contentFit="contain"
+          />
+          <ThemedText style={styles.heroTitle}>
+            {isTrialExpired
+              ? '21-Tage Challenge abgelaufen'
+              : '21-Tage Challenge noch nicht aktiviert'}
+          </ThemedText>
+          <ThemedText style={styles.heroSubtitle}>
+            {isTrialExpired
+              ? 'Deine 21-Tage Challenge ist beendet. Für weiteren Zugriff auf alle Brainhop-Trainingsvideos hol dir bitte die Vollversion auf unserer Website.'
+              : 'Um die Brainhop-Trainingsvideos zu nutzen, aktiviere zuerst deine kostenlose 2-Monats-Testversion auf der Startseite.'}
+          </ThemedText>
+        </View>
+
+        <View style={styles.lockedActions}>
+          <TouchableOpacity
+            style={styles.primaryButton}
+            onPress={() => {
+              if (isTrialExpired) {
+                Linking.openURL('https://brainhop.net');
+              } else {
+                router.replace('/');
+              }
+            }}
+          >
+            <ThemedText style={styles.primaryButtonText}>
+              {isTrialExpired
+                ? 'Zur Vollversion auf brainhop.net'
+                : 'Zur Startseite'}
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
+      </ThemedView>
+    );
+  }
+
+  // -------- Normal list (trial active) --------
   return (
     <ThemedView style={styles.container}>
       {/* Hero / jumbotron */}
@@ -226,5 +288,32 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     marginRight: 10,
+  },
+
+  // Locked view styles
+  lockedScreen: {
+    flex: 1,
+    backgroundColor: LIGHT_BG,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+    justifyContent: 'center',
+  },
+  lockedActions: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+
+  primaryButton: {
+    marginTop: 4,
+    borderRadius: 999,
+    backgroundColor: BRAINHOP_ORANGE,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  primaryButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

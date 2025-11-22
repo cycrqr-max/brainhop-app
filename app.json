@@ -8,11 +8,9 @@
     "scheme": "brainhop",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-
     "backgroundColor": "#ffffff",
-
     "splash": {
-      "image": "./assets/images/brainhop_logo_big_small.png",
+      "image": "./assets/images/brainhop_logo_big_small_new.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -23,7 +21,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
-        "foregroundImage": "./assets/images/brainhop_logo.png"
+        "foregroundImage": "./assets/images/brainhop_logo_adaptiv_new.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -38,7 +36,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/brainhop_logo_big.png",
+          "image": "./assets/images/brainhop_logo_big_small_new.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
