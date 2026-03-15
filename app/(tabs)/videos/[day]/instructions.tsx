@@ -1,7 +1,7 @@
 // app/(tabs)/videos/[day]/instructions.tsx
 
 import { Image as ExpoImage } from 'expo-image';
-import { useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -13,6 +13,7 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { DayNavigator } from '@/components/day-navigator';
 import { trainings } from '@/constants/trainings';
 import { buildPcloudStreamUrl } from '@/utils/pcloudClient';
 
@@ -23,6 +24,7 @@ const TEXT_BODY = '#374151';
 export default function TrainingInstructionsScreen() {
   const { day } = useLocalSearchParams<{ day?: string }>();
   const training = trainings.find((t) => t.id === day);
+  const currentIndex = trainings.findIndex((t) => t.id === day);
 
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,13 +32,19 @@ export default function TrainingInstructionsScreen() {
 
   useEffect(() => {
     if (!training) return;
+    if (!training.instructions.link.trim()) {
+      setVideoUrl(null);
+      setLoadError(null);
+      setLoading(false);
+      return;
+    }
+
     setLoadError(null);
     setLoading(true);
 
-    // we now just build the URL to *your backend*
     const url = buildPcloudStreamUrl(training.instructions.link);
     setVideoUrl(url);
-    setLoading(false); // we know the URL; backend will stream the rest
+    setLoading(false);
   }, [training]);
 
 
@@ -67,6 +75,14 @@ export default function TrainingInstructionsScreen() {
   return (
     <ThemedView style={styles.fullScreen}>
       <ScrollView contentContainerStyle={styles.scroll}>
+        <DayNavigator
+          currentDayId={training.id}
+          onSelectDay={(dayId) => {
+            const href = `/videos/${dayId}/instructions` as Href;
+            router.replace(href);
+          }}
+        />
+
         <View style={styles.card}>
           <View style={styles.cardIconWrapper}>
             <ExpoImage
@@ -79,6 +95,9 @@ export default function TrainingInstructionsScreen() {
           <ThemedText style={styles.title}>
             Instruktionen – {training.label}
           </ThemedText>
+          <ThemedText style={styles.dayProgressText}>
+            Tag {currentIndex + 1} von {trainings.length}
+          </ThemedText>
 
           <ThemedText style={styles.subtitle}>{video.title}</ThemedText>
 
@@ -86,7 +105,19 @@ export default function TrainingInstructionsScreen() {
             <ThemedText style={styles.info}>{video.additionalInfo}</ThemedText>
           )}
 
-          <View style={styles.videoWrapper}>
+          {!training.instructions.link.trim() && (
+            <View style={styles.emptyStateBox}>
+              <ThemedText style={styles.emptyStateTitle}>
+                Keine separaten Instruktionen vorhanden
+              </ThemedText>
+              <ThemedText style={styles.emptyStateText}>
+                Fuer diesen Tag ist nur das Uebungsvideo verfuegbar.
+              </ThemedText>
+            </View>
+          )}
+
+          {!!training.instructions.link.trim() && (
+            <View style={styles.videoWrapper}>
             {loading && (
               <View style={styles.loadingOverlay}>
                 <ActivityIndicator size="large" />
@@ -105,7 +136,8 @@ export default function TrainingInstructionsScreen() {
                 contentFit="contain"
               />
             )}
-          </View>
+            </View>
+          )}
         </View>
       </ScrollView>
     </ThemedView>
@@ -123,6 +155,7 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: 16,
     paddingVertical: 20,
+    paddingBottom: 28,
   },
 
   card: {
@@ -134,9 +167,11 @@ const styles = StyleSheet.create({
 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#fef0d8',
   },
   cardIconWrapper: {
     width: 52,
@@ -154,9 +189,15 @@ const styles = StyleSheet.create({
 
   title: {
     textAlign: 'center',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     color: TEXT_DARK,
+  },
+  dayProgressText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#9a6700',
+    fontWeight: '600',
   },
   subtitle: {
     marginTop: 4,
@@ -167,9 +208,33 @@ const styles = StyleSheet.create({
   },
   info: {
     marginTop: 8,
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: 'center',
     fontSize: 14,
+    color: TEXT_BODY,
+    lineHeight: 20,
+  },
+
+  emptyStateBox: {
+    marginTop: 8,
+    width: '100%',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#f8d69a',
+    backgroundColor: '#fff7ea',
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  emptyStateTitle: {
+    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#9a6700',
+    marginBottom: 4,
+  },
+  emptyStateText: {
+    textAlign: 'center',
+    fontSize: 13,
     color: TEXT_BODY,
   },
 
@@ -179,10 +244,12 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
     borderRadius: 16,
     overflow: 'hidden',
-    marginTop: 8,
-    backgroundColor: '#d1d5db',
+    marginTop: 4,
+    backgroundColor: '#e5e7eb',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   video: {
     width: '100%',

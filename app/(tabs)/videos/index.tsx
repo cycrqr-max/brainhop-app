@@ -104,6 +104,10 @@ export default function VideosListScreen() {
     (t) => !watchedIds.includes(t.id),
   );
   const hasUnwatched = firstUnwatchedIndex !== -1;
+  const completedCount = watchedIds.length;
+  const progressPercent = Math.round(
+    (completedCount / trainings.length) * 100,
+  );
 
   // -------- Normale Liste (Trial aktiv) --------
   return (
@@ -121,6 +125,19 @@ export default function VideosListScreen() {
         <ThemedText style={styles.heroSubtitle}>
           Wähle deinen heutigen Übungstag aus und arbeite dich Schritt
           für Schritt durch die Trainings.
+        </ThemedText>
+      </View>
+
+      <View style={styles.progressCard}>
+        <View style={styles.progressTopRow}>
+          <ThemedText style={styles.progressTitle}>Dein Fortschritt</ThemedText>
+          <ThemedText style={styles.progressPercent}>{progressPercent}%</ThemedText>
+        </View>
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
+        </View>
+        <ThemedText style={styles.progressCaption}>
+          {completedCount} von {trainings.length} Tagen abgeschlossen
         </ThemedText>
       </View>
 
@@ -159,7 +176,10 @@ export default function VideosListScreen() {
           };
 
           return (
-            <TouchableOpacity style={styles.card} onPress={handlePress}>
+            <TouchableOpacity
+              style={[styles.card, isLocked && styles.cardLocked]}
+              onPress={handlePress}
+            >
               {/* Accent bar on the left */}
               <View
                 style={[
@@ -190,6 +210,13 @@ export default function VideosListScreen() {
                   <ThemedText style={styles.cardMetaText}>
                     Tag {index + 1} von {trainings.length}
                   </ThemedText>
+                  {!isLocked && !isWatched && index === firstUnwatchedIndex && (
+                    <View style={styles.nextPill}>
+                      <ThemedText style={styles.nextPillText}>
+                        aktueller Tag
+                      </ThemedText>
+                    </View>
+                  )}
                   {isWatched && (
                     <View style={styles.pill}>
                       <ThemedText style={styles.pillText}>
@@ -231,9 +258,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffe9c7',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ffdca8',
   },
   heroLogo: {
     width: '80%',
@@ -243,7 +272,7 @@ const styles = StyleSheet.create({
   heroTitle: {
     textAlign: 'center',
     marginBottom: 4,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: TEXT_DARK,
   },
@@ -251,6 +280,49 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 13,
     color: TEXT_BODY,
+  },
+
+  progressCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ffe1b4',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 14,
+  },
+  progressTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  progressTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: TEXT_DARK,
+  },
+  progressPercent: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#9a6700',
+  },
+  progressTrack: {
+    width: '100%',
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: '#ffedd0',
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: BRAINHOP_ORANGE,
+  },
+  progressCaption: {
+    fontSize: 12,
+    color: TEXT_MUTED,
   },
 
   sectionTitle: {
@@ -274,12 +346,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#ffffff',
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#f6f0e7',
 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  cardLocked: {
+    opacity: 0.82,
   },
   cardAccent: {
     width: 4,
@@ -313,6 +390,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: TEXT_BODY,
     marginBottom: 6,
+    lineHeight: 18,
   },
   cardMetaRow: {
     flexDirection: 'row',
@@ -332,6 +410,19 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: 11,
     color: '#15803d',
+  },
+  nextPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: '#fff4de',
+    borderWidth: 1,
+    borderColor: '#ffd38a',
+  },
+  nextPillText: {
+    fontSize: 11,
+    color: '#9a6700',
+    fontWeight: '600',
   },
 
   checkIcon: {

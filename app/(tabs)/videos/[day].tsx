@@ -17,6 +17,7 @@ import {
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { DayNavigator } from '@/components/day-navigator';
 import { trainings } from '@/constants/trainings';
 import { buildPcloudStreamUrl } from '@/utils/pcloudClient';
 import { markTrainingWatched } from '@/utils/trainingProgress';
@@ -29,8 +30,9 @@ const TEXT_BODY = '#374151';
 export default function TrainingDayScreen() {
   const { day } = useLocalSearchParams<{ day?: string }>();
   const training = trainings.find((t) => t.id === day);
+  const currentIndex = trainings.findIndex((t) => t.id === day);
 
-    const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -39,10 +41,10 @@ export default function TrainingDayScreen() {
     setLoadError(null);
     setLoading(true);
 
-    // we now just build the URL to *your backend*
+    // We only need to build the backend stream URL for the selected exercise.
     const url = buildPcloudStreamUrl(training.exercise.link);
     setVideoUrl(url);
-    setLoading(false); // we know the URL; backend will stream the rest
+    setLoading(false);
   }, [training]);
 
 
@@ -75,10 +77,19 @@ export default function TrainingDayScreen() {
   }
 
   const video = training.exercise;
+  const hasInstructions = Boolean(training.instructions.link.trim());
 
   return (
     <ThemedView style={styles.fullScreen}>
       <ScrollView contentContainerStyle={styles.scroll}>
+        <DayNavigator
+          currentDayId={training.id}
+          onSelectDay={(dayId) => {
+            const href = `/videos/${dayId}` as Href;
+            router.replace(href);
+          }}
+        />
+
         <View style={styles.card}>
           <View style={styles.cardIconWrapper}>
             <ExpoImage
@@ -89,6 +100,9 @@ export default function TrainingDayScreen() {
           </View>
 
           <ThemedText style={styles.title}>{training.label}</ThemedText>
+          <ThemedText style={styles.dayProgressText}>
+            Tag {currentIndex + 1} von {trainings.length}
+          </ThemedText>
           <ThemedText style={styles.subtitle}>{video.title}</ThemedText>
 
           {video.additionalInfo && (
@@ -96,14 +110,21 @@ export default function TrainingDayScreen() {
           )}
 
           <TouchableOpacity
-            style={styles.instructionsButton}
+            style={[
+              styles.instructionsButton,
+              !hasInstructions && styles.instructionsButtonDisabled,
+            ]}
             onPress={() => {
+              if (!hasInstructions) return;
               const href = `/videos/${training.id}/instructions` as Href;
               router.push(href);
             }}
+            disabled={!hasInstructions}
           >
             <ThemedText style={styles.instructionsText}>
-              Zu den Instruktionen →
+              {hasInstructions
+                ? 'Instruktionsvideo ansehen'
+                : 'Keine separaten Instruktionen fuer diesen Tag'}
             </ThemedText>
           </TouchableOpacity>
 
@@ -140,6 +161,7 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: 16,
     paddingVertical: 20,
+    paddingBottom: 28,
   },
 
   card: {
@@ -151,9 +173,11 @@ const styles = StyleSheet.create({
 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 4,
+    shadowOpacity: 0.09,
+    shadowRadius: 14,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#fef0d8',
   },
   cardIconWrapper: {
     width: 52,
@@ -171,9 +195,15 @@ const styles = StyleSheet.create({
 
   title: {
     textAlign: 'center',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     color: TEXT_DARK,
+  },
+  dayProgressText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: '#9a6700',
+    fontWeight: '600',
   },
   subtitle: {
     marginTop: 4,
@@ -184,21 +214,33 @@ const styles = StyleSheet.create({
   },
   info: {
     marginTop: 8,
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: 'center',
     fontSize: 14,
     color: TEXT_BODY,
+    lineHeight: 20,
   },
 
   instructionsButton: {
-    marginTop: 4,
-    marginBottom: 12,
+    marginTop: 2,
+    marginBottom: 14,
+    width: '100%',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: '#fff3dc',
+    borderWidth: 1,
+    borderColor: '#ffdca8',
+  },
+  instructionsButtonDisabled: {
+    opacity: 0.6,
   },
   instructionsText: {
-    color: BRAINHOP_ORANGE,
-    textDecorationLine: 'underline',
+    color: '#9a6700',
     textAlign: 'center',
     fontWeight: '600',
+    fontSize: 13,
   },
 
   videoWrapper: {
@@ -207,10 +249,12 @@ const styles = StyleSheet.create({
     aspectRatio: 16 / 9,
     borderRadius: 16,
     overflow: 'hidden',
-    marginTop: 8,
-    backgroundColor: '#d1d5db',
+    marginTop: 4,
+    backgroundColor: '#e5e7eb',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   video: {
     width: '100%',
